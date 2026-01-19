@@ -1,0 +1,266 @@
+# Cinematic Music Generation Training Configuration
+# =================================================
+
+# Project Configuration
+project:
+  name: "cinematic-music-generation"
+  version: "1.0.0"
+  description: "Large-scale deep learning system for cinematic music and song generation"
+  
+# Data Configuration
+data:
+  # Data paths
+  data_root: "./data"
+  music_dataset_path: "./data/music"
+  voice_dataset_path: "./data/voice"
+  lyrics_dataset_path: "./data/lyrics"
+  metadata_path: "./data/metadata.csv"
+  
+  # Audio settings
+  sample_rate: 44100
+  audio_length: 48000  # ~1 second at 48kHz
+  num_channels: 2
+  segment_duration: 10.0  # seconds for training segments
+  
+  # Preprocessing
+  normalize_audio: true
+  remove_silence: true
+  apply_augmentation: true
+  
+  # Data augmentation
+  augmentation:
+    tempo_variation: true
+    pitch_shift: true
+    dynamic_range: true
+    reverb_addition: true
+    noise_injection: true
+    variation_count: 1000
+  
+  # Batch settings
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+  prefetch_factor: 2
+  
+  # Distributed settings
+  distributed: true
+  world_size: -1  # -1 for all available GPUs
+  rank: 0
+  local_rank: 0
+  
+# Model Configuration - Music Generation
+music_model:
+  # Model architecture
+  architecture: "music_transformer"  # music_transformer, audio_diffusion
+  model_name: "music_transformer_large"
+  
+  # Transformer settings
+  num_layers: 12
+  num_heads: 12
+  embed_dim: 768
+  ff_dim: 3072
+  dropout: 0.1
+  
+  # Audio settings
+  audio_channels: 2
+  latent_dim: 512
+  
+  # Diffusion settings (for audio_diffusion)
+  diffusion:
+    num_timesteps: 1000
+    beta_schedule: "cosine"
+    loss_type: "mse"
+  
+  # Training settings
+  max_sequence_length: 4096
+  learning_rate: 1e-4
+  weight_decay: 0.01
+  gradient_clip_val: 1.0
+  
+  # Checkpoint
+  checkpoint_interval: 1000
+  keep_last_checkpoints: 5
+
+# Model Configuration - Voice Cloning
+voice_model:
+  # Model architecture
+  architecture: "fastspeech2"  # tacotron2, fastspeech2
+  
+  # Encoder settings
+  encoder_num_layers: 4
+  encoder_num_heads: 4
+  encoder_embed_dim: 256
+  
+  # Decoder settings
+  decoder_num_layers: 4
+  decoder_num_heads: 4
+  decoder_embed_dim: 256
+  
+  # Vocoder settings
+  vocoder: "hifigan"
+  vocoder_embed_dim: 128
+  
+  # Training settings
+  max_text_length: 200
+  max_mel_length: 1024
+  learning_rate: 1e-4
+  weight_decay: 0.01
+  
+  # Speaker embedding
+  num_speakers: 100
+  speaker_embed_dim: 192
+
+# Model Configuration - Lyrics Generation
+lyrics_model:
+  # Model architecture
+  architecture: "gpt_neo"  # gpt_neo, bart, t5
+  
+  # Model size
+  model_size: "large"  # small, medium, large
+  num_layers: 12
+  num_heads: 12
+  embed_dim: 768
+  max_length: 512
+  
+  # Multilingual support
+  languages: ["en", "es", "fr", "de", "it", "ja", "zh"]
+  default_language: "en"
+  
+  # Training settings
+  learning_rate: 5e-5
+  weight_decay: 0.01
+  
+  # Emotion conditioning
+  emotion_conditioning: true
+  num_emotions: 8
+
+# Training Configuration
+training:
+  # Hardware settings
+  device: "cuda"
+  precision: "fp16"  # fp32, fp16, bf16
+  
+  # Distributed training
+  backend: "nccl"
+  init_method: "env"
+  
+  # Training loop
+  epochs: 100
+  max_steps: 1000000
+  eval_interval: 1000
+  log_interval: 100
+  
+  # Optimization
+  optimizer: "adamw"
+  scheduler: "cosine_warmup"
+  warmup_steps: 10000
+  
+  # Gradient accumulation
+  accumulate_grad_batches: 1
+  gradient_clip_val: 1.0
+  
+  # Mixed precision
+  amp: true
+  amp_backend: "native"
+  
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 10
+    min_delta: 0.001
+    
+  # EMA
+  ema:
+    enabled: true
+    decay: 0.9999
+    update_every: 10
+
+# Evaluation Configuration
+evaluation:
+  # Metrics
+  metrics:
+    - "fid"
+    - "clap_score"
+    - "mos"
+    - "subjective"
+  
+  # Evaluation settings
+  eval_batch_size: 16
+  num_samples: 100
+  generation_length: 30  # seconds
+  
+  # Subjective evaluation
+  subjective:
+    num_raters: 10
+    questions:
+      - "overall_quality"
+      - "relevance"
+      - "creativity"
+      - "technical_quality"
+
+# Logging Configuration
+logging:
+  # Logger type
+  logger: "tensorboard"  # tensorboard, wandb, none
+  
+  # TensorBoard
+  tensorboard:
+    log_dir: "./logs/tensorboard"
+    flush_secs: 120
+    
+  # Weights & Biases
+  wandb:
+    project: "cinematic-music-generation"
+    entity: null
+    tags: ["music", "cinematic", "generation"]
+    log_model: true
+    
+  # General logging
+  level: "INFO"
+  log_dir: "./logs"
+
+# Checkpoint Configuration
+checkpoint:
+  # Save directory
+  save_dir: "./checkpoints"
+  
+  # Save settings
+  save_interval: 1000
+  save_top_k: 5
+  save_last: true
+  
+  # Resume training
+  resume: false
+  resume_path: null
+  
+  # Pretrained models
+  pretrained:
+    music_model: null
+    voice_model: null
+    lyrics_model: null
+
+# Hardware Optimization
+hardware:
+  # CUDA settings
+  cudnn:
+    benchmark: true
+    deterministic: false
+    
+  # Memory optimization
+  memory_format: "channels_last"
+  
+  # Multi-GPU
+  parallel: true
+  
+# Reproducibility
+reproducibility:
+  seed: 42
+  cudnn_deterministic: false
+  cudnn_benchmark: true
+
+# Debug Settings
+debug:
+  enabled: false
+  limit_batches: 10
+  fast_dev_run: false
+  overfit_batches: 0
